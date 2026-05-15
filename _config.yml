@@ -1,8 +1,8 @@
-title: PythonLove
+title: Python Love
 author: CalmXin
 description: Welcome to PythonLove — where code meets passion.
 baseurl: ""
-url: "https://scripts.pythonlove.com"
+url: "https://script.pyth.onl"
 include:
     - favicon.ico
 theme: jekyll-theme-hacker

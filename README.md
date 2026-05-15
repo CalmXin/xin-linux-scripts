@@ -35,9 +35,9 @@ https://mirrors.huaweicloud.com/repository/pypi/simple/
 ### Install Python
 
 ```shell
-curl -fsSL https://scripts.pythonlove.com/install_python.sh | bash
+curl -fsSL https://script.pyth.onl/install_python.sh | bash
 # 或
-wget -qO- https://scripts.pythonlove.com/install_python.sh | bash
+wget -qO- https://script.pyth.onl/install_python.sh | bash
 ```
 
 ### Python Scripts
