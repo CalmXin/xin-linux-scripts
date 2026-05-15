@@ -3,7 +3,7 @@ author: CalmXin
 description: Welcome to PythonLove — where code meets passion.
 baseurl: ""
 url: "https://scripts.pythonlove.com"
-theme: minima
+theme: Hacker
 plugins:
   - jekyll-feed
   - jekyll-sitemap
