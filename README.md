@@ -32,7 +32,7 @@ https://mirrors.huaweicloud.com/repository/pypi/simple/
 
 ## 脚本
 
-### 一键安装 python
+### Install Python
 
 ```shell
 curl -fsSL https://scripts.pythonlove.com/install_python.sh | bash
@@ -40,7 +40,7 @@ curl -fsSL https://scripts.pythonlove.com/install_python.sh | bash
 wget -qO- https://scripts.pythonlove.com/install_python.sh | bash
 ```
 
-### Run scripts in bin/
+### Python Scripts
 
 ```shell
 # 安装 Docker 环境
