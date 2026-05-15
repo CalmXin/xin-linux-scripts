@@ -3,6 +3,8 @@ author: CalmXin
 description: Welcome to PythonLove — where code meets passion.
 baseurl: ""
 url: "https://scripts.pythonlove.com"
+include:
+    - favicon.ico
 theme: jekyll-theme-hacker
 plugins:
     - jekyll-feed
