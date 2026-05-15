@@ -1,5 +1,9 @@
 # Xin Linux Scripts
 
+该项目特色，有意识地基于 python 实现一些常见的脚本。
+
+或许你会发现有更知名更成熟的 shell 脚本，阁下可以选择自己喜欢的方式。
+
 ## 常用镜像
 
 ### Python
@@ -27,8 +31,6 @@ https://mirrors.huaweicloud.com/repository/pypi/simple/
 ```
 
 ## 脚本
-
-项目特色，有意识地让所有脚本都基于 python 实现。
 
 ### 一键安装 python
 
