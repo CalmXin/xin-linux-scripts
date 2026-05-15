@@ -1,0 +1,9 @@
+title: Python Love Scripts
+author: CalmXin
+description: 基于 Python 的 Linux 脚本
+baseurl: ""
+url: "https://scripts.pythonlove.com"
+theme: minima
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
