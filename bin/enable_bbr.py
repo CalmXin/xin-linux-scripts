@@ -51,13 +51,13 @@ def get_kernel_version() -> Optional[tuple]:
     major = int(match.group(1))
     minor = int(match.group(2))
     patch = int(match.group(3)) if match.group(3) else 0
-    return (major, minor, patch)
+    return major, minor, patch
 
 
 def try_load_bbr_module() -> bool:
     """尝试加载 tcp_bbr 内核模块"""
     try:
-        result = subprocess.run(
+        subprocess.run(
             ['modprobe', 'tcp_bbr'],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
