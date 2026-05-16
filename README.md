@@ -44,9 +44,9 @@ wget -qO- https://script.pyth.onl/install_python.sh | bash
 
 ```shell
 # 安装 Docker 环境
-python3 bin/install_docker.py
+curl -fsSL -O https://script.pyth.onl/bin/install_docker.py && python3 install_docker.py
 
 # 开启 BBR
-python3 bin/enable_bbr.py
+curl -fsSL -O https://script.pyth.onl/bin/enable_bbr.py && python3 enable_bbr.py
 ```
 
