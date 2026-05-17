@@ -48,5 +48,8 @@ curl -fsSL -O https://script.pyth.onl/bin/install_docker.py && python3 install_d
 
 # 开启 BBR
 curl -fsSL -O https://script.pyth.onl/bin/enable_bbr.py && python3 enable_bbr.py
+
+# NodeQuality (Python 版)
+curl -fsSL -O https://script.pyth.onl/bin/run_nodequality.py && python3 run_nodequality.py
 ```
 
