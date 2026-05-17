@@ -5,7 +5,12 @@ from pathlib import Path
 
 def main():
     work_dir = input(f'请输入脚本运行目录（默认为 /tmp/node_quality）:')
-    work_dir = Path(work_dir or '/tmp/node_quality')
+    if not work_dir:
+        work_dir = Path('/tmp/node_quality').resolve()
+        work_dir.mkdir(exist_ok=True, parents=True)
+    else:
+        work_dir = Path(work_dir).resolve(True)
+
     if not work_dir.is_dir():
         print(f'{work_dir} 不是一个目录')
         sys.exit(1)
