@@ -4,8 +4,8 @@ from pathlib import Path
 
 
 def main():
-    work_dir = input(f'请输入脚本运行目录（默认为 /tmp）:')
-    work_dir = Path(work_dir or '/tmp')
+    work_dir = input(f'请输入脚本运行目录（默认为 /tmp/node_quality）:')
+    work_dir = Path(work_dir or '/tmp/node_quality')
     if not work_dir.is_dir():
         print(f'{work_dir} 不是一个目录')
         sys.exit(1)
