@@ -18,7 +18,7 @@ import textwrap
 import time
 import urllib.request
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Any, List
+from typing import Dict, Optional, Tuple, Any
 
 # 全局变量
 WORK_DIR: Optional[Path] = None
@@ -45,11 +45,7 @@ LANG_STRINGS: Dict[str, Dict[str, str]] = {
         "run_iq": "Running IP Quality Test...",
         "run_nq": "Running Network Quality Test...",
         "run_bt": "Running Backroute Trace...",
-        "cleanup_after": "Clean Up after Installation",
-        "download_failed": "Failed to download BenchOS from {url}",
-        "chroot_failed": "Chroot command failed: {cmd}",
-        "upload_failed": "Result upload failed: {error}",
-        "unexpected_error": "Unexpected error occurred: {error}"
+        "cleanup_after": "Clean Up after Installation"
     },
     "cn": {
         "err01": "错误：work_dir不包含'nodequality'！",
@@ -68,11 +64,7 @@ LANG_STRINGS: Dict[str, Dict[str, str]] = {
         "run_iq": "正在运行 IP 质量测试...",
         "run_nq": "正在运行网络质量测试...",
         "run_bt": "正在运行回程路由追踪...",
-        "cleanup_after": "安装后清理",
-        "download_failed": "无法从 {url} 下载 BenchOS",
-        "chroot_failed": "Chroot 命令执行失败：{cmd}",
-        "upload_failed": "结果上传失败：{error}",
-        "unexpected_error": "发生未知错误：{error}"
+        "cleanup_after": "安装后清理"
     }
 }
 
@@ -106,8 +98,7 @@ class NodeQuality:
         self.bench_os_url = BENCH_OS_URL
 
         # 检测 ARM 架构
-        machine = platform.machine().lower()
-        if any(arch in machine for arch in ['arm', 'aarch64']):
+        if any(arch in platform.machine().lower() for arch in ['arm', 'aarch64']):
             self.bench_os_url = BENCH_OS_ARM_URL
 
     @staticmethod
@@ -115,15 +106,17 @@ class NodeQuality:
         """打印带颜色的文本"""
         print(f"{COLORS[color]}{text}{COLORS['reset']}")
 
-    def get_lang_string(self, key: str, **kwargs) -> str:
-        """获取本地化字符串，支持格式化参数"""
-        lang_dict = LANG_STRINGS.get(self.lang, LANG_STRINGS["en"])
-        template = lang_dict.get(key, LANG_STRINGS["en"].get(key, ""))
-        return template.format(**kwargs)
+    def get_lang_string(self, key: str) -> str:
+        """获取语言字符串"""
+        lang_key = f"{self.lang}.{key}"
+        fallback_key = f"en.{key}"
+        return LANG_STRINGS.get(self.lang, {}).get(key, LANG_STRINGS["en"].get(key, ""))
 
     def parse_args(self) -> None:
         """解析命令行参数"""
         parser = argparse.ArgumentParser(add_help=False)
+
+        # 自定义参数处理
         args = sys.argv[1:]
         i = 0
         custom_work_dir = None
@@ -147,7 +140,6 @@ class NodeQuality:
                 self.opt_lang = "-E"
             elif arg.startswith('-'):
                 self.color_print(self.get_lang_string("err02"), "red")
-                sys.exit(1)
             i += 1
 
         # 设置工作目录
@@ -180,7 +172,7 @@ class NodeQuality:
 
             The benchmark will be performed in a temporary system, and all traces will be deleted after that.
             Therefore, it has no impact on the original environment and supports almost all linux systems.
-
+            
             Author: Lloyd@nodeseek.com
             Github: github.com/LloydAsp/NodeQuality
             Command: bash <(curl -sL https://run.NodeQuality.com)
@@ -188,10 +180,10 @@ class NodeQuality:
         else:
             intro = """
                 网络服务器的专业测评脚本，检测硬件质量、IP质量和网络质量
-
+    
                 脚本测试是纯净的，在临时系统中执行，之后所有的痕迹都会被删除
                 因此，它不会对原始环境产生任何影响，并且支持几乎所有 Linux 系统
-
+                
                 作者：Lloyd@nodeseek.com
                 仓库：github.com/LloydAsp/NodeQuality
                 命令：bash <(curl -sL https://run.NodeQuality.com)
@@ -202,13 +194,9 @@ class NodeQuality:
 
     def pre_init(self) -> None:
         """初始化工作目录"""
-        try:
-            self.work_dir.mkdir(parents=True, exist_ok=True)
-            os.chdir(self.work_dir)
-            self.work_dir = Path.cwd()
-        except OSError as e:
-            self.color_print(self.get_lang_string("unexpected_error", error=str(e)), "red")
-            sys.exit(1)
+        self.work_dir.mkdir(parents=True, exist_ok=True)
+        os.chdir(self.work_dir)
+        self.work_dir = Path.cwd()
 
     def pre_cleanup(self) -> None:
         """预清理"""
@@ -218,13 +206,10 @@ class NodeQuality:
             sys.exit(1)
         # 清空目录内容
         for item in self.work_dir.iterdir():
-            try:
-                if item.is_file() or item.is_symlink():
-                    item.unlink()
-                elif item.is_dir():
-                    shutil.rmtree(item)
-            except OSError as e:
-                self.color_print(self.get_lang_string("unexpected_error", error=str(e)), "yellow")
+            if item.is_file() or item.is_symlink():
+                item.unlink()
+            elif item.is_dir():
+                shutil.rmtree(item)
 
     def clear_mount(self) -> None:
         """清理挂载点"""
@@ -238,7 +223,7 @@ class NodeQuality:
             pass
 
         # 卸载挂载点
-        mount_points: List[Path] = [
+        mount_points = [
             bench_os_dir / "proc",
             bench_os_dir / "sys",
             bench_os_dir / "dev"
@@ -247,8 +232,10 @@ class NodeQuality:
         for mount_point in mount_points:
             if mount_point.exists():
                 try:
-                    umount_cmd = ["umount", "-R" if mount_point.name == "dev" else "", str(mount_point)]
-                    subprocess.run([c for c in umount_cmd if c], check=False, capture_output=True)
+                    if mount_point.name == "dev":
+                        subprocess.run(["umount", "-R", str(mount_point)], check=False, capture_output=True)
+                    else:
+                        subprocess.run(["umount", str(mount_point)], check=False, capture_output=True)
                 except Exception:
                     pass
 
@@ -264,56 +251,35 @@ class NodeQuality:
         # 下载 BenchOs
         bench_os_tar = self.work_dir / "BenchOs.tar.gz"
         self.color_print(f"Downloading {self.bench_os_url}...", "blue")
-        try:
-            urllib.request.urlretrieve(self.bench_os_url, bench_os_tar)
-        except Exception as e:
-            self.color_print(self.get_lang_string("download_failed", url=self.bench_os_url), "red")
-            sys.exit(1)
+        urllib.request.urlretrieve(self.bench_os_url, bench_os_tar)
 
         # 解压
-        try:
-            subprocess.run(["tar", "-xzf", "BenchOs.tar.gz"], check=True)
-        except subprocess.CalledProcessError as e:
-            self.color_print(self.get_lang_string("unexpected_error", error=str(e)), "red")
-            sys.exit(1)
-
+        subprocess.run(["tar", "-xzf", "BenchOs.tar.gz"], check=True)
         os.chdir(bench_os_dir)
 
         # 挂载必要的文件系统
-        mount_commands = [
-            ["mount", "-t", "proc", "/proc", "proc/"],
-            ["mount", "--bind", "/sys", "sys/"],
-            ["mount", "--rbind", "/dev", "dev/"],
-            ["mount", "--make-rslave", "dev"]
-        ]
-        for cmd in mount_commands:
-            try:
-                subprocess.run(cmd, check=True)
-            except subprocess.CalledProcessError as e:
-                self.color_print(self.get_lang_string("unexpected_error", error=str(e)), "red")
-                sys.exit(1)
+        subprocess.run(["mount", "-t", "proc", "/proc", "proc/"], check=True)
+        subprocess.run(["mount", "--bind", "/sys", "sys/"], check=True)
+        subprocess.run(["mount", "--rbind", "/dev", "dev/"], check=True)
+        subprocess.run(["mount", "--make-rslave", "dev"], check=True)
 
         # 复制 resolv.conf
         resolv_conf = bench_os_dir / "etc" / "resolv.conf"
         if resolv_conf.exists():
             resolv_conf.unlink()
-        try:
-            shutil.copy("/etc/resolv.conf", resolv_conf)
-        except Exception as e:
-            self.color_print(self.get_lang_string("unexpected_error", error=str(e)), "yellow")
+        shutil.copy("/etc/resolv.conf", resolv_conf)
 
     def chroot_run(self, command: str) -> subprocess.CompletedProcess:
         """在 chroot 环境中运行命令"""
         bench_os_dir = self.work_dir / "BenchOs"
         full_command = f"chroot {bench_os_dir} /bin/bash -c '{command}'"
-        try:
-            result = subprocess.run(full_command, shell=True, capture_output=True, text=True, timeout=600)
-            if result.returncode != 0:
-                self.color_print(self.get_lang_string("chroot_failed", cmd=command), "yellow")
-            return result
-        except subprocess.TimeoutExpired:
-            self.color_print(self.get_lang_string("chroot_failed", cmd=command), "yellow")
-            return subprocess.CompletedProcess(args=full_command, returncode=1, stdout="", stderr="Timeout")
+        return subprocess.run(full_command, shell=True, capture_output=True, text=True)
+
+    def load_part(self) -> None:
+        """加载 swap 部分脚本"""
+        # 这里需要实现 swap.sh 的功能
+        # 由于无法直接执行远程 shell 脚本，我们需要在 Python 中实现相同逻辑
+        pass
 
     def load_3rd_program(self) -> None:
         """加载第三方程序"""
@@ -328,25 +294,20 @@ class NodeQuality:
 
     def detect_virt(self) -> str:
         """检测虚拟化类型"""
-        virt_checks = [
-            ("/run/systemd/container", lambda p: Path(p).read_text().strip()),
-            ("/.dockerenv", lambda _: "docker"),
-            ("/run/.containerenv", lambda _: "podman"),
-        ]
-        for path, handler in virt_checks:
-            if Path(path).exists():
-                return handler(path)
-
+        if Path("/run/systemd/container").exists():
+            return Path("/run/systemd/container").read_text().strip()
+        if Path("/.dockerenv").exists():
+            return "docker"
+        if Path("/run/.containerenv").exists():
+            return "podman"
         if Path("/proc/1/cgroup").exists():
             cgroup_content = Path("/proc/1/cgroup").read_text()
             if "lxc" in cgroup_content:
                 return "lxc"
-
         if Path("/proc/cpuinfo").exists():
             cpuinfo_content = Path("/proc/cpuinfo").read_text()
             if "hypervisor" in cpuinfo_content:
                 return "kvm"
-
         return "none"
 
     def detect_testdev_type(self, dev: str) -> str:
@@ -356,6 +317,7 @@ class NodeQuality:
             dev_name = real_dev.name
 
             if dev_name.startswith("md"):
+                # RAID 设备
                 if Path("/proc/mdstat").exists():
                     mdstat = Path("/proc/mdstat").read_text()
                     for line in mdstat.split('\n'):
@@ -400,7 +362,7 @@ class NodeQuality:
             if result.returncode == 0:
                 lines = result.stdout.strip().split('\n')
                 mounts = []
-                for line in lines[1:]:
+                for line in lines[1:]:  # 跳过标题行
                     parts = line.split()
                     if len(parts) >= 4 and parts[1] == md and parts[3]:
                         mounts.append(parts[3])
@@ -416,11 +378,8 @@ class NodeQuality:
         """预获取系统信息"""
         virt_type = self.detect_virt()
 
+        # 获取操作系统信息
         osinfo: Dict[str, Any] = {}
-        meminfo: Dict[str, Any] = {}
-        diskinfo: Dict[str, Any] = {}
-
-        # 获取进程数
         try:
             result = subprocess.run(["ps", "-e"], capture_output=True, text=True, check=False)
             osinfo["proc"] = len(result.stdout.strip().split('\n')) - 1 if result.stdout else 0
@@ -429,78 +388,116 @@ class NodeQuality:
 
         # 获取用户数量
         try:
-            user_count = 0
             if shutil.which("loginctl"):
                 result = subprocess.run(["loginctl", "list-users"], capture_output=True, text=True, check=False)
                 if result.returncode == 0:
                     user_count = len(result.stdout.strip().split('\n')) - 1
+                    if user_count > 0:
+                        osinfo["user"] = user_count
             elif platform.system() == "Darwin":
                 result = subprocess.run(["stat", "-f", "%Su", "/dev/console"], capture_output=True, text=True,
                                         check=False)
                 if result.returncode == 0:
-                    user_count = 1
+                    osinfo["user"] = 1
             else:
                 result = subprocess.run(["who"], capture_output=True, text=True, check=False)
                 if result.returncode == 0:
                     user_count = len(result.stdout.strip().split('\n'))
-
-            if user_count > 0:
-                osinfo["user"] = user_count
+                    if user_count > 0:
+                        osinfo["user"] = user_count
         except Exception:
             pass
 
         # 获取服务信息
-        if virt_type not in ["docker", "podman", "lxc", "container"]:
-            if shutil.which("systemctl"):
-                try:
-                    result = subprocess.run(["systemctl", "list-units", "--type=service", "--state=running"],
-                                            capture_output=True, text=True, check=False)
-                    if result.returncode == 0:
-                        running_services = len([line for line in result.stdout.split('\n') if '.service' in line])
-                        osinfo["svcr"] = running_services
+        if virt_type in ["docker", "podman", "lxc", "container"]:
+            # 容器环境中可能没有 systemd
+            osinfo["svcr"] = ""
+            osinfo["svct"] = ""
+        elif shutil.which("systemctl"):
+            try:
+                result = subprocess.run(["systemctl", "list-units", "--type=service", "--state=running"],
+                                        capture_output=True, text=True, check=False)
+                if result.returncode == 0:
+                    running_services = len([line for line in result.stdout.split('\n') if '.service' in line])
+                    osinfo["svcr"] = running_services
 
-                    result = subprocess.run(["systemctl", "list-unit-files", "--type=service"],
-                                            capture_output=True, text=True, check=False)
-                    if result.returncode == 0:
-                        total_services = len([line for line in result.stdout.split('\n') if '.service' in line])
-                        osinfo["svct"] = total_services
-                except Exception:
-                    pass
+                result = subprocess.run(["systemctl", "list-unit-files", "--type=service"],
+                                        capture_output=True, text=True, check=False)
+                if result.returncode == 0:
+                    total_services = len([line for line in result.stdout.split('\n') if '.service' in line])
+                    osinfo["svct"] = total_services
+            except Exception:
+                pass
+        elif shutil.which("rc-service"):
+            try:
+                result = subprocess.run(["rc-service", "-r"], capture_output=True, text=True, check=False)
+                if result.returncode == 0:
+                    osinfo["svcr"] = len(result.stdout.strip().split('\n'))
 
-        # 内存相关信息
+                result = subprocess.run(["rc-service", "-l"], capture_output=True, text=True, check=False)
+                if result.returncode == 0:
+                    osinfo["svct"] = len(result.stdout.strip().split('\n'))
+            except Exception:
+                pass
+        elif platform.system() == "Darwin" and shutil.which("launchctl"):
+            try:
+                result = subprocess.run(["launchctl", "list"], capture_output=True, text=True, check=False)
+                if result.returncode == 0:
+                    service_count = len(result.stdout.strip().split('\n')) - 1
+                    osinfo["svcr"] = service_count
+                    osinfo["svct"] = service_count
+            except Exception:
+                pass
+
+        # 获取内存信息
+        meminfo: Dict[str, Any] = {}
         if virt_type == "kvm":
             try:
                 if shutil.which("lsmod"):
                     result = subprocess.run(["lsmod"], capture_output=True, text=True, check=False)
-                    meminfo["balloon"] = 1 if result.returncode == 0 and "virtio_balloon" in result.stdout else 0
+                    if result.returncode == 0 and "virtio_balloon" in result.stdout:
+                        meminfo["balloon"] = 1
+                    else:
+                        meminfo["balloon"] = 0
 
                 ksm_path = Path("/sys/kernel/mm/ksm/run")
-                meminfo["ksm"] = 1 if ksm_path.exists() and ksm_path.read_text().strip() == "1" else 0
+                if ksm_path.exists() and ksm_path.read_text().strip() == "1":
+                    meminfo["ksm"] = 1
+                else:
+                    meminfo["ksm"] = 0
             except Exception:
                 meminfo["balloon"] = 0
                 meminfo["ksm"] = 0
         elif virt_type == "lxc":
             try:
                 block_devices = Path("/sys/devices/virtual/block")
-                dm_count = len(
-                    [d for d in block_devices.iterdir() if d.name.startswith("dm")]) if block_devices.exists() else 0
-                meminfo["neighbor"] = dm_count
+                if block_devices.exists():
+                    dm_count = len([d for d in block_devices.iterdir() if d.name.startswith("dm")])
+                    meminfo["neighbor"] = dm_count
             except Exception:
                 meminfo["neighbor"] = 0
 
-        # RAID 信息
+        # 获取磁盘信息
+        diskinfo: Dict[str, Any] = {}
         ridx = 0
+
         if Path("/proc/mdstat").exists():
             mdstat_content = Path("/proc/mdstat").read_text()
-            import re
             for line in mdstat_content.split('\n'):
+                import re
                 match = re.match(r'^(md\d+)\s*:\s*active\s+([a-z0-9]+)\s+(.*)$', line)
                 if match:
                     ridx += 1
                     rname = match.group(1)
                     rlevel = match.group(2).upper()
                     rdevs_raw = match.group(3)
-                    rdevs_parts = [part for part in rdevs_raw.split() if '[' in part and ']' in part]
+
+                    # 提取设备列表
+                    rdevs_parts = []
+                    for part in rdevs_raw.split():
+                        if '[' in part and ']' in part:
+                            rdevs_parts.append(part)
+
                     rdevs = " ".join(rdevs_parts)
 
                     diskinfo[f"raid{ridx}.name"] = rname
@@ -511,13 +508,18 @@ class NodeQuality:
         diskinfo["raid_count"] = ridx
         diskinfo["testdir"] = str(self.work_dir.parent)
 
-        # 测试设备信息
+        # 获取测试设备
         try:
             result = subprocess.run(["df", "--output=source", str(self.work_dir)],
                                     capture_output=True, text=True, check=True)
             testdev = result.stdout.strip().split('\n')[1] if len(result.stdout.strip().split('\n')) > 1 else ""
             diskinfo["testdev"] = testdev.lstrip("/dev/")
             diskinfo["testdev_type"] = self.detect_testdev_type(testdev)
+
+            if diskinfo["testdev_type"].startswith("RAID"):
+                # 这里需要实现从 diskinfo 中获取成员设备的逻辑
+                diskinfo["testdev_members"] = ""
+                diskinfo["testdev_mount"] = ""
         except Exception:
             diskinfo["testdev"] = ""
             diskinfo["testdev_type"] = ""
@@ -532,9 +534,13 @@ class NodeQuality:
         elif self.run_hardware_quality_test.lower() == "v":
             params = " -V"
 
+        # 获取系统信息
         osinfo, meminfo, diskinfo = self.pre_fetch_info()
+
+        # 准备环境变量
         nqenv = f"osinfo={json.dumps(osinfo)} meminfo={json.dumps(meminfo)} diskinfo={json.dumps(diskinfo)}"
 
+        # 构建命令
         cmd_parts = ["env", f"NQENV={nqenv}", "bash", "-s", "--"]
         if self.opt_lang:
             cmd_parts.append(self.opt_lang)
@@ -561,7 +567,9 @@ class NodeQuality:
 
     def run_net_quality(self) -> str:
         """运行网络质量测试"""
-        params = " -L" if self.run_net_quality_test.lower() == "l" else ""
+        params = ""
+        if self.run_net_quality_test.lower() == "l":
+            params = " -L"
 
         cmd_parts = ["bash", "<(curl -Ls https://Net.Check.Place)"]
         if self.opt_ipv:
@@ -591,15 +599,18 @@ class NodeQuality:
 
     def upload_result(self) -> None:
         """上传结果"""
+        # 在 chroot 环境中创建 zip 文件
         zip_cmd = "zip -j - '/result/*'"
         result = self.chroot_run(zip_cmd)
 
+        # 将 zip 内容写入文件
         zip_file = self.work_dir / "result.zip"
-        try:
-            with open(zip_file, 'wb') as f:
-                f.write(result.stdout.encode('latin1'))
+        with open(zip_file, 'wb') as f:
+            f.write(result.stdout.encode('latin1'))  # zip 输出是二进制
 
-            upload_api = "https://api.nodequality.com/api/v1/record"
+        # 上传到 API
+        upload_api = "https://api.nodequality.com/api/v1/record"
+        try:
             with open(zip_file, 'rb') as f:
                 import base64
                 zip_data = base64.b64encode(f.read()).decode('utf-8')
@@ -607,38 +618,43 @@ class NodeQuality:
                 req.add_header('Content-Type', 'application/octet-stream')
                 urllib.request.urlopen(req)
         except Exception as e:
-            self.color_print(self.get_lang_string("upload_failed", error=str(e)), "yellow")
+            print(f"Upload failed: {e}")
 
     def post_cleanup(self) -> None:
         """清理后处理"""
         try:
+            # 卸载 dev
             bench_os_dir = self.work_dir / "BenchOs"
-            if bench_os_dir.exists():
-                subprocess.run(["chroot", str(bench_os_dir), "umount", "-R", "/dev"],
-                               check=False, capture_output=True)
+            subprocess.run(["chroot", str(bench_os_dir), "umount", "-R", "/dev"],
+                           check=False, capture_output=True)
 
+            # 清理挂载
             self.clear_mount()
+
+            # 检查是否还有挂载
             self.post_check_mount()
 
+            # 删除 BenchOs 目录
             if (self.work_dir / "BenchOs").exists():
                 shutil.rmtree(self.work_dir / "BenchOs")
 
-            if "nodequality" in str(self.work_dir) and self.work_dir.exists():
+            # 删除整个工作目录
+            if "nodequality" in str(self.work_dir):
                 shutil.rmtree(self.work_dir)
             else:
                 self.color_print(self.get_lang_string("err01"), "red")
                 sys.exit(1)
 
         except Exception as e:
-            self.color_print(self.get_lang_string("unexpected_error", error=str(e)), "red")
-            sys.exit(1)
+            print(f"Cleanup error: {e}")
 
         sys.exit(0)
 
     def sig_cleanup(self, signum, frame) -> None:
         """信号处理清理函数"""
-        for sig in [signal.SIGINT, signal.SIGTERM, signal.SIGHUP]:
-            signal.signal(sig, signal.SIG_IGN)
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        signal.signal(signal.SIGHUP, signal.SIG_IGN)
 
         self.color_print(self.get_lang_string("cleanup"), "green_bold")
         self.post_cleanup()
@@ -659,26 +675,33 @@ class NodeQuality:
 
     def ask_question(self) -> None:
         """询问用户要运行哪些测试"""
-        questions = [
-            ("ask_hq", "run_hardware_quality_test"),
-            ("ask_iq", "run_ip_quality_test"),
-            ("ask_nq", "run_net_quality_test"),
-            ("ask_bt", "run_net_trace_test")
-        ]
+        # 硬件质量测试
+        print(f"{COLORS['yellow_bold']}{self.get_lang_string('ask_hq')}{COLORS['reset']}", end="")
+        self.run_hardware_quality_test = input().strip() or "y"
 
-        for key, attr in questions:
-            prompt = f"{COLORS['yellow_bold']}{self.get_lang_string(key)}{COLORS['reset']}"
-            response = input(prompt).strip() or "y"
-            setattr(self, attr, response)
+        # IP 质量测试
+        print(f"{COLORS['yellow_bold']}{self.get_lang_string('ask_iq')}{COLORS['reset']}", end="")
+        self.run_ip_quality_test = input().strip() or "y"
+
+        # 网络质量测试
+        print(f"{COLORS['yellow_bold']}{self.get_lang_string('ask_nq')}{COLORS['reset']}", end="")
+        self.run_net_quality_test = input().strip() or "y"
+
+        # 回程路由追踪
+        print(f"{COLORS['yellow_bold']}{self.get_lang_string('ask_bt')}{COLORS['reset']}", end="")
+        self.run_net_trace_test = input().strip() or "y"
 
     def main(self) -> None:
         """主函数"""
         # 设置信号处理器
-        for sig in [signal.SIGINT, signal.SIGTERM, signal.SIGHUP]:
-            signal.signal(sig, self.sig_cleanup)
+        signal.signal(signal.SIGINT, self.sig_cleanup)
+        signal.signal(signal.SIGTERM, self.sig_cleanup)
+        signal.signal(signal.SIGHUP, self.sig_cleanup)
 
+        # 注册退出清理函数
         atexit.register(self.post_cleanup)
 
+        # 开始
         self.start_ascii()
         self.ask_question()
 
@@ -688,6 +711,8 @@ class NodeQuality:
 
         self.color_print(self.get_lang_string("loadbench"), "green_bold")
         self.load_bench_os()
+
+        self.load_part()
         self.load_3rd_program()
 
         self.color_print(self.get_lang_string("basicinfo"), "green_bold")
@@ -695,25 +720,39 @@ class NodeQuality:
         result_directory = self.work_dir / "BenchOs" / "result"
         result_directory.mkdir(parents=True, exist_ok=True)
 
+        # 运行 header
         header_info = self.run_header()
         with open(result_directory / "header_info.log", 'w') as f:
             f.write(header_info)
 
-        tests = [
-            (self.run_hardware_quality_test.lower() in ['y', 'f', 'v'], self.run_HardwareQuality, "hardware_quality"),
-            (self.run_ip_quality_test.lower() == 'y', self.run_ip_quality, "ip_quality"),
-            (self.run_net_quality_test.lower() in ['y', 'l'], self.run_net_quality, "net_quality"),
-            (self.run_net_trace_test.lower() == 'y', self.run_net_trace, "backroute_trace")
-        ]
+        # 运行各项测试
+        if self.run_hardware_quality_test.lower() in ['y', 'f', 'v']:
+            self.color_print(self.get_lang_string("run_hq"), "green_bold")
+            hq_result = self.run_HardwareQuality()
+            with open(result_directory / "hardware_quality.log", 'w') as f:
+                f.write(hq_result)
 
-        for should_run, test_func, name in tests:
-            if should_run:
-                self.color_print(self.get_lang_string(f"run_{name[:2]}"), "green_bold")
-                result = test_func()
-                with open(result_directory / f"{name}.log", 'w') as f:
-                    f.write(result)
+        if self.run_ip_quality_test.lower() == 'y':
+            self.color_print(self.get_lang_string("run_iq"), "green_bold")
+            iq_result = self.run_ip_quality()
+            with open(result_directory / "ip_quality.log", 'w') as f:
+                f.write(iq_result)
 
+        if self.run_net_quality_test.lower() in ['y', 'l']:
+            self.color_print(self.get_lang_string("run_nq"), "green_bold")
+            nq_result = self.run_net_quality()
+            with open(result_directory / "net_quality.log", 'w') as f:
+                f.write(nq_result)
+
+        if self.run_net_trace_test.lower() == 'y':
+            self.color_print(self.get_lang_string("run_bt"), "green_bold")
+            bt_result = self.run_net_trace()
+            with open(result_directory / "backroute_trace.log", 'w') as f:
+                f.write(bt_result)
+
+        # 上传结果
         self.upload_result()
+
         self.color_print(self.get_lang_string("cleanup_after"), "green_bold")
         self.post_cleanup()
 
