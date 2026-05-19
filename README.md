@@ -51,5 +51,8 @@ curl -fsSL -O https://script.pyth.onl/bin/enable_bbr.py && python3 enable_bbr.py
 
 # 运行 NodeQuality
 curl -fsSL -O https://script.pyth.onl/bin/run_nodequality.py && python3 run_nodequality.py
+
+# 运行 1panel 安装脚本
+curl -fsSL -O https://script.pyth.onl/bin/install_1panel.py && python3 install_1panel.py
 ```
 
