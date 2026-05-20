@@ -54,5 +54,8 @@ curl -fsSL -O https://script.pyth.onl/bin/run_nodequality.py && python3 run_node
 
 # 运行 1panel 安装脚本
 curl -fsSL -O https://script.pyth.onl/bin/install_1panel.py && python3 install_1panel.py
+
+# 安装 rclone
+curl -fsSL -O https://script.pyth.onl/bin/install_rclone.py && python3 install_rclone.py
 ```
 
