@@ -4,7 +4,7 @@ import sys
 
 def main():
     result = subprocess.run(
-        'curl https://rclone.org/install.sh | sudo bash',
+        'curl -fsSL https://rclone.org/install.sh | sudo bash',
         shell=True
     )
     sys.exit(result.returncode)
