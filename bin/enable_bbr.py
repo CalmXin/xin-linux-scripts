@@ -1,5 +1,8 @@
 import re
 import subprocess
+import sys
+import textwrap
+from pathlib import Path
 from typing import List, Optional
 
 
@@ -69,6 +72,37 @@ def try_load_bbr_module() -> bool:
         return False
 
 
+def persist_bbr_config() -> None:
+    """将 BBR 配置写入 /etc/sysctl.d/99-bbr.conf 以实现持久化"""
+    config_content = """
+    # Enabled by BBR setup script
+    net.core.default_qdisc=fq
+    net.ipv4.tcp_congestion_control=bbr
+    """
+    config_content = textwrap.dedent(config_content).strip()
+    config_path = "/etc/sysctl.d/99-bbr.conf"
+
+    # 检查是否已存在相同配置（避免重复）
+    if Path(config_path).exists():
+        try:
+            with open(config_path, 'r') as f:
+                existing = f.read()
+            if 'tcp_congestion_control=bbr' in existing and 'default_qdisc=fq' in existing:
+                print("BBR 配置已持久化，无需重复写入。")
+                return
+        except (OSError, IOError):
+            pass  # 忽略读取错误，继续覆盖写入
+
+    # 写入配置文件
+    try:
+        with open(config_path, 'w') as f:
+            f.write(config_content)
+        print(f"✅ BBR 配置已持久化到 {config_path}")
+    except (OSError, IOError) as e:
+        print(f"⚠️ 无法写入持久化配置（请确保以 root 权限运行）: {e}")
+        sys.exit(1)
+
+
 def enable_bbr() -> None:
     """开启 BBR，若未支持但内核 >= 4.9，则尝试加载模块"""
     if is_bbr_enabled():
@@ -128,10 +162,12 @@ def enable_bbr() -> None:
         return
 
     # 验证是否成功启用
-    if is_bbr_enabled():
-        print("BBR 已成功开启。")
-    else:
+    if not is_bbr_enabled():
         print("BBR 启用失败：验证未通过。")
+        sys.exit(0)
+
+    print("BBR 已成功开启。")
+    persist_bbr_config()
 
 
 if __name__ == '__main__':
