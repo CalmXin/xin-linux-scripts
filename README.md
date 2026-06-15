@@ -39,8 +39,15 @@ curl -fsSL https://script.pyth.onl/install_python.sh | bash
 ```
 
 ### Install UV
+
 ```shell
 curl -fsSL https://astral.sh/uv/install.sh | sh
+```
+
+### Install Docker
+
+```shell
+curl -fsSL https://get.docker.com | sh
 ```
 
 ### Python Scripts
