@@ -40,7 +40,7 @@ curl -fsSL https://script.pyth.onl/install_python.sh | bash
 
 ### Install UV
 ```shell
-curl -LsSf https://astral.sh/uv/install.sh | sh
+curl -fsSL https://astral.sh/uv/install.sh | sh
 ```
 
 ### Python Scripts
