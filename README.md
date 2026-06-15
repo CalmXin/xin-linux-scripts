@@ -36,8 +36,11 @@ https://mirrors.huaweicloud.com/repository/pypi/simple/
 
 ```shell
 curl -fsSL https://script.pyth.onl/install_python.sh | bash
-# 或
-wget -qO- https://script.pyth.onl/install_python.sh | bash
+```
+
+### Install UV
+```shell
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
 ### Python Scripts
