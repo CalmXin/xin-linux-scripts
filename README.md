@@ -57,5 +57,8 @@ curl -fsSL -O https://script.pyth.onl/bin/install_1panel.py && python3 install_1
 
 # 安装 rclone
 curl -fsSL -O https://script.pyth.onl/bin/install_rclone.py && python3 install_rclone.py
+
+# 安装 python uv
+curl -fsSL -O https://script.pyth.onl/bin/install_uv.py && python3 install_uv.py
 ```
 
